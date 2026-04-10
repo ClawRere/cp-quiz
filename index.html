@@ -79,13 +79,13 @@ body{font-family:'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;bac
 
 /* ── Quiz ── */
 .quiz-pg{padding-top:70px;padding-bottom:40px;min-height:100vh}
-.opt{background:var(--card2);border:1px solid var(--border2);border-radius:14px;padding:15px 18px;margin-bottom:10px;cursor:pointer;transition:all .2s;font-size:14px;line-height:1.55;color:var(--text2);text-align:left;width:100%;display:flex;gap:10px;align-items:flex-start}
+.opt{background:var(--card2);border:1px solid var(--border2);border-radius:14px;padding:13px 16px;margin-bottom:9px;cursor:pointer;transition:all .2s;font-size:14px;line-height:1.5;color:var(--text2);text-align:left;width:100%;display:flex;gap:10px;align-items:center;min-height:52px}
 .opt:hover{background:var(--accent2)12;border-color:var(--accent2)44;transform:translateX(3px)}
 .opt.sel{background:var(--accent2)1e;border-color:var(--accent2);color:var(--accent2);font-weight:700}
 .opt-mark{width:22px;height:22px;border:2px solid var(--border2);border-radius:50%;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .2s;background:var(--card)}
 .opt.sel .opt-mark{background:var(--accent2);border-color:var(--accent2);color:#fff}
-.next-wrap{margin-top:16px;display:none}
-.next-wrap.show{display:block}
+.nav-wrap{margin-top:14px;display:flex;gap:10px;justify-content:space-between}
+.nav-wrap.hidden{display:none}
 
 /* ── Loading ── */
 .load{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center}
@@ -251,7 +251,10 @@ body{font-family:'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;bac
 <div class="screen" id="sQuiz">
   <div class="quiz-pg">
     <div id="qBox"></div>
-    <div class="next-wrap" id="nWrap"><button class="btn" style="width:100%" onclick="nextQ()">下一题 →</button></div>
+    <div class="nav-wrap hidden" id="nWrap">
+      <button class="rt-btn" style="flex:1" id="btnPrev" onclick="prevQ()">← 上一题</button>
+      <button class="btn" style="flex:1" id="btnNext" onclick="nextQ()">下一题 →</button>
+    </div>
   </div>
 </div>
 
@@ -354,12 +357,12 @@ const QS = [
 {o:"心里翻白眼，表面笑嘻嘻",d:{r:3}},
 ]},
 {q:"你点外卖时的真实状态是：",sub:"（测你的消费哲学）",o:[
-{o:"先用红包，再用满减，最后货比三家",d:{m:4}},
+{o:"先领红包再用满减，货比三家",d:{m:4}},
 {o:"想吃什么就点什么，钱不是问题",d:{j:4}},
 {o:"纠结半小时，选了第一个",d:{a:3,w:2}},
 {o:"根本不用外卖，直接下楼吃",d:{s:2}},
-{o:"天天「再点最后一次就不点了」",d:{h:4}},
-{o:"省钱要紧，实在饿了就泡面",d:{m:3,z:2}},
+{o:"每天发誓最后一次，明天继续",d:{h:4}},
+{o:"省钱要紧，饿了就泡面对付",d:{m:3,z:2}},
 ]},
 {q:"晚上躺在床上刷手机，你通常：",sub:"（测作息与自控力）",o:[
 {o:"说好11点睡，结果刷到凌晨1点",d:{h:3,d:3}},
@@ -387,14 +390,14 @@ const QS = [
 {q:"听说同事背后说你坏话，你第一反应是：",sub:"（测情绪管理与记仇程度）",o:[
 {o:"当面质问，非要掰扯清楚",d:{d:5}},
 {o:"无所谓，爱说说去",d:{z:5}},
-{o:"表面平静，内心已经写了800字小作文",d:{r:4,a:2}},
+{o:"表面平静，内心已写800字小作文",d:{r:4,a:2}},
 {o:"找闺蜜/兄弟吐槽2小时",d:{s:3}},
 {o:"记仇，暗暗在内心拉黑此人",d:{r:5}},
 {o:"用行动证明自己，打脸对方",d:{w:3}},
 ]},
 {q:"周末你的理想状态是：",sub:"（测生活态度）",o:[
 {o:"睡到自然醒，随便吃点",d:{z:4,j:2}},
-{o:"上午健身，下午学习，晚上社交",d:{w:4,a:2}},
+{o:"上午健身学习，下午社交，卷满全天",d:{w:4,a:2}},
 {o:"宅家刷剧吃零食，哪儿也不去",d:{g:3}},
 {o:"到处浪，不浪费好天气",d:{s:4,j:2}},
 {o:"加班，周末是给工作狂的礼物",d:{a:4,t:3}},
@@ -911,6 +914,33 @@ function calc(){
   fin.z=Math.min(100,dims.z+dims.i*0.5);
   fin.c=Math.min(100,dims.c+dims.h*0.3);
   fin.g=Math.min(100,dims.g+dims.t*0.2);
+
+  // ── 相反属性互斥处理 ──
+  // 上进(a) vs 佛系(z)：若两者都偏高，压低较低的那个
+  if(fin.a>=60 && fin.z>=60){
+    const diff=Math.abs(fin.a-fin.z);
+    if(diff<25){
+      // 差值小于25，互相削弱
+      const reduce=diff<15?10:5;
+      if(fin.a>fin.z)fin.a=Math.max(fin.a-reduce,55);
+      else fin.z=Math.max(fin.z-reduce,55);
+    }
+  }
+  // 社交(s) vs 内向(i)：两者互斥
+  if(fin.s>=70 && dims.i>=20){
+    fin.s=Math.min(fin.s,dims.i+30);
+  }
+  // 搞事(c) vs 稳定(w)：两者互斥
+  if(fin.c>=70 && dims.w>=20){
+    fin.c=Math.min(fin.c,dims.w+30);
+  }
+  // 熬夜(h) vs 自律(w)：互斥
+  if(dims.h>=25 && dims.w>=25){
+    const reduce=(dims.h+dims.w>90)?15:8;
+    if(dims.h>dims.w)fin.g=Math.max(fin.g-reduce,40);
+    else fin.g=Math.max(fin.g-reduce,50);
+  }
+
   return fin;
 }
 
@@ -989,15 +1019,36 @@ function rq(){
   document.getElementById('qN').textContent=ci+1;
   document.getElementById('pFill').style.width=((ci)/QS.length*100)+'%';
   const box=document.getElementById('qBox');
-  box.innerHTML=`<div class="card"><div class="q-num">第 ${ci+1} 题</div><div class="q-text">${q.q}</div><div class="q-sub">${q.sub}</div><div>${q.o.map((opt,i)=>`<button class="opt" onclick="sel(${i})"><span class="opt-mark">○</span>${opt.o}</button>`).join('')}</div></div>`;
-  document.getElementById('nWrap').classList.remove('show');
+  // 选项尽量均匀：固定行数，文字超过的行尾截断显示
+  const opts=q.o.map((opt,i)=>{
+    const txt=opt.o.length>20?opt.o.slice(0,18)+'…':opt.o;
+    const selMark=answers[ci]&&answers[ci]===opt.d?'●':'○';
+    return `<button class="opt${answers[ci]&&answers[ci]===opt.d?' sel':''}" onclick="sel(${i})"><span class="opt-mark">${selMark}</span>${opt.o}</button>`;
+  }).join('');
+  box.innerHTML=`<div class="card"><div class="q-num">第 ${ci+1} 题</div><div class="q-text">${q.q}</div><div class="q-sub">${q.sub}</div><div>${opts}</div></div>`;
+  // 显示/隐藏上一题按钮
+  const nav=document.getElementById('nWrap');
+  nav.classList.remove('hidden');
+  document.getElementById('btnPrev').style.visibility=ci>0?'visible':'hidden';
+  document.getElementById('btnNext').textContent=ci>=QS.length-1?'查看结果 →':'下一题 →';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function sel(i){
   answers[ci]=QS[ci].o[i].d;
   document.querySelectorAll('.opt').forEach((o,j)=>{o.classList.toggle('sel',j===i);o.querySelector('.opt-mark').textContent=j===i?'●':'○';});
-  document.getElementById('nWrap').classList.add('show');
+  // 立即自动跳转下一题
+  setTimeout(()=>{
+    ci++;
+    if(ci>=QS.length){show('sLoad');document.getElementById('prog').classList.remove('show');setTimeout(showResult,2500);}
+    else rq();
+  },200);
+}
+
+function prevQ(){
+  if(ci<=0)return;
+  ci--;
+  rq();
 }
 
 function nextQ(){
