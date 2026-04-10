@@ -18,8 +18,13 @@
   --card:rgba(255,255,255,.04);--card2:rgba(255,255,255,.04);--card3:rgba(255,255,255,.07);
   --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.1);
 }
-*{margin:0;padding:0;box-sizing:border-box;}
+/* ── 反爬虫：禁止选字/拖拽 ── */
+.nosel{-webkit-user-select:none;-moz-user-select:none;user-select:none;pointer-events:none}
 body{font-family:'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .5s,color .5s}
+body.nosel,body.nosel *{-webkit-user-select:none!important;-moz-user-select:none!important;user-select:none!important}
+/* ── 水印 ── */
+.watermark{position:fixed;bottom:12px;right:14px;font-size:11px;color:rgba(128,128,200,.18);pointer-events:none;z-index:200;display:none;line-height:1.6}
+.watermark.show{display:block}"/>
 
 /* ── 深色星空背景（仅夜间模式显示） ── */
 .stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0;transition:opacity .5s}
@@ -154,6 +159,9 @@ body{font-family:'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;bac
   }
 })();
 </script>
+
+<!-- 水印 -->
+<div class="watermark" id="watermark">中式人格测试<br><span id="wmType"></span></div>
 
 <!-- Progress -->
 <div class="prog" id="prog">
@@ -326,10 +334,10 @@ body{font-family:'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;bac
     </div>
 
     <div class="res-act">
-      <button class="act-btn" onclick="share('wx')">💬 微信</button>
+      <button class="act-btn" onclick="copyShareLink()">🔗 复制分享链接</button>
       <button class="act-btn" onclick="share('pyq')">🧑‍🤝‍🧑 朋友圈</button>
-      <button class="act-btn" onclick="share('copy')">📋 复制</button>
     </div>
+    <div style="margin-top:8px;font-size:12px;color:var(--text3)">📢 分享后，好友点开链接可直接看到你的结果，无需重测</div>
     <button class="rt-btn" onclick="restart()">🔄 重新测试</button>
   </div>
 </div>
@@ -337,6 +345,40 @@ body{font-family:'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;bac
 </div>
 
 <script>
+// ═══════════════════════════════════════════════
+// 反爬虫
+(function(){
+  // 禁用右键
+  document.addEventListener('contextmenu',e=>e.preventDefault());
+  // 检测无头浏览器
+  const botHints=/HeadlessChrome|PhantomJS|Puppeteer|playwright|selenium/i.test(navigator.userAgent);
+  if(botHints){document.title='404';document.body.innerHTML='';return;}
+  // Ctrl+U / F12 禁止
+  document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='u'){e.preventDefault();}if(e.key==='F12'){e.preventDefault();}});
+  // 禁止 iframe 嵌入
+  try{if(window!==window.top){document.write('');document.close();}}catch(e){}
+})();
+
+// ═══════════════════════════════════════════════
+// 分享：生成含结果的链接
+function getShareUrl(pt,utm){
+  const base=location.href.split('?')[0].split('#')[0];
+  const p={t:pt.t,n:pt.name,src:utm||'share'};
+  return base+'?'+Object.keys(p).map(k=>k+'='+encodeURIComponent(p[k])).join('&');
+}
+
+// 一键复制分享链接（带人格名称的文案）
+function copyShareLink(){
+  const dims=calc();
+  const pt=matchType(dims,parseInt(window.sAge||25));
+  const url=getShareUrl(pt,'copy');
+  const txt=`我测出了「${pt.name} · ${pt.cn}」！ ${pt.s}\n\n测试地址：${url}\n\n#中式人格测试`;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn=document.getElementById('btnCopy');
+    if(btn){const old=btn.innerHTML;btn.innerHTML='✅ 已复制！';setTimeout(()=>btn.innerHTML=old,2000);}
+  });
+}
+
 // ═══════════════════════════════════════════════
 // 题目 (35道)
 // ═══════════════════════════════════════════════
@@ -1101,6 +1143,11 @@ function showResult(){
 
   show('sRes');
   window.scrollTo({top:0,behavior:'smooth'});
+  document.body.classList.add('nosel');
+  // 显示水印
+  const wm=document.getElementById('watermark');
+  document.getElementById('wmType').textContent=pt.t+' '+pt.name;
+  wm.classList.add('show');
   setTimeout(()=>{
     let i=0;
     for(const k of Object.keys(DLABELS)){
@@ -1110,11 +1157,57 @@ function showResult(){
 }
 
 function share(p){
-  const pt=matchType(calc(),parseInt(window.sAge||25));
-  const txt=`我测出了「${pt.name}」！ ${pt.s}\n你也来试试？`;
+  const dims=calc();
+  const pt=matchType(dims,parseInt(window.sAge||25));
+  const url=getShareUrl(pt,p==='pyq'?'pyq':'share');
+  const txt=`我测出了「${pt.name} · ${pt.cn}」！ ${pt.s}\n\n测试地址：${url}\n\n#中式人格测试`;
   if(p==='copy'){navigator.clipboard.writeText(txt).then(()=>alert('文案已复制！'));}
-  else{alert('截图分享到朋友圈效果最好！\n\n'+txt);}
+  else{alert('截图分享效果最好，文案已备好：\n\n'+txt);}
 }
+
+// 页面加载：读取URL参数，展示已有结果（好友通过链接查看）
+(function(){
+  try{
+    const params=new URLSearchParams(location.search);
+    const t=params.get('t'),n=params.get('n'),src=params.get('src');
+    if(t&&n){
+      // 找到对应人格
+      const keys=Object.keys(TYPES);
+      let pt=null;
+      for(const k of keys){if(TYPES[k].t===t){pt=TYPES[k];break;}}
+      if(!pt)pt=TYPES[keys[0]];
+      document.title=`${n}的中式人格 · 中式人格测试`;
+      // 显示人格卡
+      document.getElementById('rBadge').textContent=`${n}的中式人格`;
+      document.getElementById('rAgeTag').style.display='block';
+      document.getElementById('rAgeTag').textContent='👀 这是好友分享的结果';
+      document.getElementById('rType').textContent=pt.t;
+      document.getElementById('rName').textContent=pt.cn?`${n} · ${pt.cn}`:n;
+      document.getElementById('rSub').textContent=pt.s;
+      document.getElementById('rDesc').innerHTML=pt.d;
+      document.getElementById('rPersonal').innerHTML=pt.personal||pt.d;
+      document.getElementById('rRelation').innerHTML=pt.relation||pt.d;
+      document.getElementById('rCareer').innerHTML=pt.career||pt.d;
+      document.getElementById('rLove').innerHTML=pt.love||pt.d;
+      document.getElementById('rGrow').innerHTML=pt.grow||pt.a;
+      document.getElementById('rAdvice').textContent=pt.a;
+      document.getElementById('rBars').innerHTML='<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px">🔒 人格雷达仅本人测试后可见</div>';
+      document.getElementById('rCp').innerHTML='';
+      let th='';pt.tags.forEach(t=>th+=`<span class="rtag">${t}</span>`);
+      document.getElementById('rTags').innerHTML=th;
+      // 水印
+      const wm=document.getElementById('watermark');
+      document.getElementById('wmType').textContent=pt.name;
+      wm.classList.add('show');
+      // 隐藏分享按钮区，显示"我也测一个"
+      document.querySelector('.res-act').innerHTML='<button class="btn" onclick="location.href=location.pathname" style="font-size:14px;padding:13px 36px">🎯 我也要测！</button>';
+      show('sRes');
+      // 反爬虫：结果页禁止选字
+      document.body.classList.add('nosel');
+      return;
+    }
+  }catch(e){}
+})();
 
 function restart(){
   ci=0;answers=[];window.sZodiac='';window.sStar='';window.sGender='';
