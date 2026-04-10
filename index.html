@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>中式人格测试 - 你的「中国式灵魂」是什么型号？</title>
+<title>中式命格测试 - 你的「中国式灵魂」是什么型号？</title>
 <style>
 /* ══ 主题变量 ══ */
 :root{
@@ -175,17 +175,18 @@ body.nosel,body.nosel *{-webkit-user-select:none!important;-moz-user-select:none
 <div class="screen active" id="sHero">
   <div class="hero">
     <div class="hero-badge">🔥 中国专属人格测试</div>
-    <h1 class="hero-title">你是哪种<br>「中国式灵魂」？</h1>
-    <p class="hero-sub">星座 · 生肖 · 年龄 · 生活习惯<br>35道题，测出你刻在DNA里的中国人属性</p>
+    <h1 class="hero-title">你是哪种<br>「中式命格」？</h1>
+    <p class="hero-sub">生肖 · 黄道宫 · 出生日期 · 日常修为<br>35道题，测出你刻在命盘里的中国人属性</p>
     <div class="hero-icons">
-      <span class="hero-icon">🧧 红包观</span>
-      <span class="hero-icon">🐉 生肖加成</span>
-      <span class="hero-icon">📱 手机依赖</span>
-      <span class="hero-icon">🍜 外卖哲学</span>
-      <span class="hero-icon">🏠 亲戚Battle</span>
-      <span class="hero-icon">💰 搞钱灵魂</span>
-      <span class="hero-icon">🌙 夜猫作息</span>
-      <span class="hero-icon">😤 记仇程度</span>
+      <span class="hero-icon">🧧 红包命格</span>
+      <span class="hero-icon">🐉 生肖气运</span>
+      <span class="hero-icon">☀️ 黄道宫盘</span>
+      <span class="hero-icon">📱 手机业障</span>
+      <span class="hero-icon">🍜 外卖道行</span>
+      <span class="hero-icon">🏠 亲戚因果</span>
+      <span class="hero-icon">💰 财库厚薄</span>
+      <span class="hero-icon">🌙 夜猫精元</span>
+      <span class="hero-icon">😤 记仇修为</span>
     </div>
     <button class="btn" onclick="show('sInfo')">开始测试 →</button>
     <div class="hero-count">已有 128,739 人测出人格型号</div>
@@ -201,8 +202,16 @@ body.nosel,body.nosel *{-webkit-user-select:none!important;-moz-user-select:none
       <div class="q-sub">保证测试结果更精准（认真脸）</div>
 
       <div class="form-row">
-        <label>🎂 你的年龄</label>
-        <input class="num-input" id="fAge" type="number" placeholder="比如：28" min="1" max="120">
+        <label>🎂 你的年龄 / 出生日期</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input class="num-input" id="fAge" type="number" placeholder="直接填年龄，如28" min="1" max="120" style="flex:1" oninput="onAgeOrDateChange()">
+          <span style="color:var(--text3);line-height:48px;font-size:13px">岁</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--text3);font-size:12px">或</span>
+          <input class="num-input" id="fBirth" type="date" placeholder="选出生日期" style="flex:1;font-size:14px" onchange="onBirthDateChange()">
+        </div>
+        <div id="birthHint" style="font-size:11px;color:var(--text3);margin-top:5px;display:none">选日期后系统自动推算年龄和十二黄道宫</div>
       </div>
 
       <div class="form-row">
@@ -233,7 +242,7 @@ body.nosel,body.nosel *{-webkit-user-select:none!important;-moz-user-select:none
       </div>
 
       <div class="form-row">
-        <label>♈ 星座</label>
+        <label>☀️ 十二黄道宫 <span style="font-size:11px;color:var(--text3)">（输完日期自动填）</span></label>
         <div class="sg" id="fStar">
           <div class="sg-opt" onclick="pick(this,'star','白羊')"><span class="icon">♈</span>白羊</div>
           <div class="sg-opt" onclick="pick(this,'star','金牛')"><span class="icon">♉</span>金牛</div>
@@ -380,6 +389,73 @@ function copyShareLink(){
 }
 
 // ═══════════════════════════════════════════════
+// 出生日期 ↔ 年龄 / 十二黄道宫 自动识别
+function calcAge(birthStr){
+  if(!birthStr)return null;
+  const bd=new Date(birthStr);
+  const now=new Date();
+  let age=now.getFullYear()-bd.getFullYear();
+  const md=(now.getMonth()-bd.getMonth())*30+(now.getDate()-bd.getDate());
+  if(md<0)age--;
+  return age;
+}
+
+// 根据出生日期推算生肖（近似：中国农历新年大约在1月21-2月20日）
+function getZodiacFromBirth(birthStr){
+  if(!birthStr)return null;
+  const bd=new Date(birthStr);
+  const year=bd.getFullYear();
+  const m=bd.getMonth()+1,d=bd.getDate();
+  // 农历新年通常在1.21-2.20，若在此之前则属相是上一年
+  const isBeforeLN=(m===1)||(m===2&&d<20);
+  const cy=isBeforeLN?year-1:year;
+  const animals=['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+  return animals[(cy-1900)%12];
+}
+
+// 根据出生日期推算十二黄道宫（公历太阳运行周期）
+function getStarFromBirth(birthStr){
+  if(!birthStr)return null;
+  const bd=new Date(birthStr);
+  const m=bd.getMonth()+1,d=bd.getDate();
+  // 粗略黄道宫划分（每年略有±1天浮动）
+  const cutoffs=[20,19,20,20,21,21,22,22,21,22,21,20];
+  const signs=['魔羯','水瓶','双鱼','白羊','金牛','双子','巨蟹','狮子','处女','天秤','天蝎','射手'];
+  const idx=m<cutoffs[m-1]?m-1:m-1===-1?11:m-1;
+  return signs[idx];
+}
+
+// 年龄输入框变化
+function onAgeOrDateChange(){
+  const a=document.getElementById('fAge').value;
+  if(a)window.sAge=a;
+}
+// 出生日期变化 → 自动填年龄 + 自动选生肖 + 自动选黄道宫
+function onBirthDateChange(){
+  const bd=document.getElementById('fBirth').value;
+  if(!bd)return;
+  // 自动算年龄填入
+  const age=calcAge(bd);
+  if(age>0&&age<120){
+    document.getElementById('fAge').value=age;
+    window.sAge=age;
+  }
+  document.getElementById('birthHint').style.display='block';
+  // 自动选生肖
+  const zodiac=getZodiacFromBirth(bd);
+  if(zodiac){
+    const opts=document.querySelectorAll('#fZodiac .zg-opt');
+    opts.forEach(o=>{if(o.textContent.includes(zodiac)){pick(o,'zodiac',zodiac);}});
+  }
+  // 自动选黄道宫
+  const star=getStarFromBirth(bd);
+  if(star){
+    const opts=document.querySelectorAll('#fStar .sg-opt');
+    opts.forEach(o=>{if(o.textContent.includes(star)){pick(o,'star',star);}});
+  }
+}
+
+// ═══════════════════════════════════════════════
 // 题目 (35道)
 // ═══════════════════════════════════════════════
 const QS = [
@@ -492,14 +568,14 @@ const QS = [
 {o:"其实早就醒了，躺着不想起",d:{h:3,z:3}},
 ]},
 {q:"你觉得人生最重要的是？",sub:"（灵魂拷问，请认真作答）",o:[
-{o:"快乐 —— 开心就好",d:{j:3,z:2}},
+{o:"逍遥 —— 财务自由，想走就走",d:{c:4,j:3}},
 {o:"搞钱 —— 经济基础决定一切",d:{m:4,a:2}},
-{o:"健康 —— 活着最重要",d:{z:3,w:2}},
-{o:"家人 —— 陪伴是最长情的告白",d:{l:4}},
-{o:"自由 —— 不被定义，做自己",d:{c:4}},
+{o:"健康 —— 身体是修行的本钱",d:{z:3,w:2}},
+{o:"家人 —— 父母在，不远游",d:{l:4}},
+{o:"气运 —— 命里有时终须有",d:{z:3}},
 {o:"面子 —— 不能让人看笑话",d:{d:3}},
-{o:"实现自我价值",d:{w:3,a:2}},
-{o:"有尊严地活着",d:{w:3,r:2}},
+{o:"积德 —— 修来世福报",d:{w:3,l:2}},
+{o:"开悟 —— 活得明白最重要",d:{r:3,w:2}},
 ]},
 {q:"相亲对象问你「你有什么缺点」，你说：",sub:"（测相亲生存智慧）",o:[
 {o:"「太认真/太善良」（反向凡尔赛）",d:{c:3}},
@@ -612,10 +688,10 @@ const QS = [
 {o:"价值观冲突，聊不到一块",d:{r:2}},
 ]},
 {q:"你通常几点睡觉？",sub:"（测作息类型）",o:[
-{o:"晚上10点前，作息规律",d:{w:3}},
-{o:"11点到12点，正常偏晚",d:{z:2}},
-{o:"凌晨1点到2点，习惯性熬夜",d:{h:3,g:2}},
-{o:"凌晨2点以后，失眠或不想睡",d:{h:4,t:2}},
+{o:"亥时（22点）前，子时前必入睡",d:{w:3}},
+{o:"子时前后（23-24点），正常偏晚",d:{z:2}},
+{o:"丑时（凌晨1-2点），习惯性熬夜",d:{h:3,g:2}},
+{o:"寅时以后（凌晨3点+），修仙模式",d:{h:4,t:2}},
 {o:"不固定，看当天心情",d:{c:2}},
 ]},
 {q:"你身边的朋友通常怎么评价你？",sub:"（测他人眼中的自己）",o:[
@@ -643,13 +719,13 @@ const QS = [
 {o:"群里最活跃的那个",d:{s:4,d:2}},
 ]},
 {q:"最后一道题：你现在最想要什么？",sub:"（灵魂拷问，请凭直觉选择）",o:[
-{o:"很多很多钱",d:{m:4,a:2}},
-{o:"一个懂我的人",d:{l:3}},
-{o:"睡个好觉",d:{z:3,t:2}},
+{o:"很多很多钱，财库爆满",d:{m:4,a:2}},
+{o:"一个懂我的人，灵魂契合",d:{l:3}},
+{o:"睡个好觉，失眠太折磨",d:{z:3,t:2}},
 {o:"自由——不被约束的人生",d:{c:4}},
-{o:"健康的身体",d:{z:3,w:2}},
-{o:"升职加薪，被认可",d:{a:4}},
-{o:"世界和平，少点烦心事",d:{z:2}},
+{o:"健康的身体，元气满满",d:{z:3,w:2}},
+{o:"升职加薪，走上巅峰",d:{a:4}},
+{o:"一方清净，少点纷扰",d:{z:2}},
 {o:"一场说走就走的旅行",d:{c:2,j:3}},
 ]},
 ];
@@ -752,8 +828,8 @@ const TYPES = {
     grow:"你的成长是「学会专注」。你涉猎很广，但深度不够。选择一个最有潜力的方向，全力以赴，比十个半成品更有价值。",
     a:"副业是安全感，但别让副业拖垮主业。专注，是比多线程更高级的能力。",
     tags:["斜杠青年","副业狂魔","上进心","多面手"],dims:{a:4,w:2},bars:{s:45,a:95,z:15,c:60,g:65},cp:[{e:"🐼",n:"搞钱狂魔",s:85},{e:"📱",n:"数码僵尸",s:40}],clr:"#f1c40f"},
-  M5:{n:"职场野心家",cn:"攀登者",t:"AMB-W",s:"目标明确，一路向上",
-    d:"你是那种每次述职都能把领导说到眼睛发光的人，是那种永远在思考下一步怎么走的人。你不满足于现状，你相信晋升是给有准备的人的礼物，而你已经准备好了。",
+  M5:{n:"职场野心家",cn:"卷王本王",t:"AMB-W",s:"天行健，君子以自强不息",
+    d:"你是那种每次述职都能把领导说到眼睛发光的人，是那种永远在思考下一步怎么走的人。你不满足于现状，你相信晋升是给有准备的人的礼物——而你已经准备好了。你的卷不是盲目内卷，是有目标有野心的卷道。",
     personal:"你的野心是双刃剑——它让你不断前进，但也可能让你忽略当下的幸福。你永远在追逐下一个目标，却忘了停下来感受自己已经拥有的。",
     relation:"你可能是那种「工作狂」伴侣——永远在忙，没时间陪家人。你的伴侣可能会感到被忽视。记住：工作是为了生活，不是生活为了工作。",
     career:"你是天生的领导者，适合需要目标和动力的岗位：销售、创业、管理。你的野心让你在这些领域如鱼得水。但要学会授权，不要什么事都自己扛。",
@@ -761,8 +837,8 @@ const TYPES = {
     grow:"你的成长是「学会慢下来」。你的速度已经很快了，但方向可能跑偏。偶尔停下来问自己：这是我真正想要的吗？还是只是想要「赢」？",
     a:"野心是你的燃料，但别忘了路上的风景。工作狂也要学会休息，不然赢了世界也累了。",
     tags:["职场卷王","目标导向","拼命三郎","野心家"],dims:{a:5,w:2},bars:{s:50,a:98,z:15,c:55,g:60},cp:[{e:"🐼",n:"搞钱狂魔",s:78},{e:"🐴",n:"纯正打工人",s:45}],clr:"#e74c3c"},
-  M6:{n:"人间财神",cn:"财运天选",t:"FORT-R",s:"钱来找我，不是我找钱",
-    d:"你是那种莫名其妙就能赚到钱的人，是那种买什么理财产品什么就涨的人，是那种随便开个店就能火的人。你的财运好到让人怀疑你是不是偷偷拜了什么神仙。",
+  M6:{n:"人间财神",cn:"天选之人",t:"FORT-R",s:"财库厚深，八方来财",
+    d:"你是那种莫名其妙就能赚到钱的人，是那种买什么理财产品什么就涨的人，是那种随便开个店就能火的人。你的财库天生厚重，八方来财，财运好到让人怀疑你是不是偷偷拜了财神爷。",
     personal:"你的运气是稀缺资源，但不是每个人都有的。你可能因此对「努力」这件事不太上心，觉得运气会来。运气是加成，但实力是基础。",
     relation:"你可能是朋友圈里的「散财童子」，请客大方、借线爽快。你的大方让你人缘好，但也要小心：不是每个人都值得你的大方。",
     career:"适合需要「运气」的领域：投资、创业、创意行业。你的直觉很准，适合需要「押注」的决策。但要记住：运气会用完，实力才是长久之计。",
@@ -772,8 +848,8 @@ const TYPES = {
     tags:["天选之人","财运好","富贵命","躺赢选手"],dims:{m:3,j:2},bars:{s:55,a:75,z:45,c:40,g:55},cp:[{e:"🍜",n:"干饭战神",s:80},{e:"🧘",n:"佛系隐士",s:60}],clr:"#f39c12"},
 
   // ── 躺平系 ──
-  Z1:{n:"佛系隐士",cn:"宁静致远",t:"ZEN-M",s:"人间清醒，看淡一切",
-    d:"你是那种「都行、可以、没关系」的佛系大师。红包抢不抢都行，群里发不发都行，人生最大的追求就是——别来烦我。升职加薪？随缘。世间纷纷扰扰，与我何干？你已经达到了「不以物喜，不以己悲」的人生境界。",
+  Z1:{n:"佛系隐士",cn:"道心安然",t:"ZEN-M",s:"跳出三界外，不在五行中",
+    d:"你是那种「都行、可以、没关系」的佛系大师，已臻「无欲则刚」的境界。红包抢不抢都行，群里发不发都行，人生最大的追求就是——别来烦我。升职加薪？随缘。世间纷纷扰扰，与我何干？你已经达到了「不以物喜，不以己悲」的人生境界，妥妥的躺平修仙党。",
     personal:"你的佛系可能源于看透，也可能源于懒。你不需要太多就能满足，这是优点，但也是陷阱。没有欲望就没有动力，没有动力就没有成长。试着找一件能让你「不佛」的事，哪怕只是一点点。",
     relation:"你是朋友中最好相处的人——不争、不抢、不计较。但这种态度可能让人觉得你没有立场。适当表达喜好，是对自己负责。",
     career:"适合稳定的、不需要太多竞争的工作：技术、创作、学术。你的淡定让你在这些领域很专注，但也可能让你错过机会。",
@@ -899,27 +975,27 @@ const TYPES = {
 // ═══════════════════════════════════════════════
 // 计分 & 结果
 // ═══════════════════════════════════════════════
-const DLABELS = {s:'社交能量',a:'上进野心',z:'佛系指数',c:'搞事指数',g:'手机依赖'};
+const DLABELS = {s:'社交气场',a:'卷王指数',z:'躺平修为',c:'搞事道行',g:'业障深浅'};
 const DCOLORS = ['#e74c3c','#f39c12','#9b59b6','#e91e63','#1abc9c'];
 
-// 生肖加成
+// 生肖命格加成
 const ZODIAC_BONUS={
   '龙':{c:15,a:10},'虎':{d:10,a:10},'兔':{z:15},'蛇':{r:10,z:5},
   '马':{a:10},'羊':{z:10,l:5},'猴':{c:10,a:10},'鸡':{w:5},
   '狗':{l:10},'猪':{z:15,j:10},'鼠':{c:10,m:10},'牛':{w:10,m:5}
 };
-// 星座加成
+// 十二黄道宫命盘加成
 const STAR_BONUS={
   '白羊':{d:10,a:10},'金牛':{m:10,z:10},'双子':{c:10,s:5},'巨蟹':{l:15,r:10},
   '狮子':{d:15,s:5},'处女':{w:10,a:10},'天秤':{s:10,l:5},'天蝎':{r:15,z:10},
   '射手':{c:10,a:5},'摩羯':{a:15,w:10},'水瓶':{c:15,i:10},'双鱼':{r:15,j:5}
 };
-// 年龄加成
+// 年龄命格加成（不同年龄段命盘能量不同）
 function ageBonus(age){
   const b={};
-  if(age<22){b.c=15;b.a=10;b.g=10;}
-  else if(age<28){b.a=5;b.c=5;}
-  else if(age>35){b.z=15;b.w=10;b.r=5;}
+  if(age<22){b.c=15;b.a=10;b.g=10;}       // 少年运：躁动期
+  else if(age<28){b.a=5;b.c=5;}            // 青年初期：开始卷
+  else if(age>35){b.z=15;b.w=10;b.r=5;}    // 中年运：沉淀期
   return b;
 }
 
@@ -1045,8 +1121,15 @@ function pick(el,type,val){
 }
 
 function beginQuiz(){
-  const age=document.getElementById('fAge').value;
-  if(!age||age<1||age>120){document.getElementById('fAge').style.borderColor='#e74c3c';document.getElementById('fAge').placeholder='请输入真实年龄（1-120岁）';return;}
+  // 支持年龄数字或出生日期
+  let age=document.getElementById('fAge').value;
+  if(!age){
+    const bd=document.getElementById('fBirth').value;
+    if(bd){
+      age=calcAge(bd);
+    }
+  }
+  if(!age||age<1||age>120){document.getElementById('fAge').style.borderColor='#e74c3c';document.getElementById('fAge').placeholder='请输入年龄或选出生日期';return;}
   document.getElementById('fAge').style.borderColor='';
   window.sAge=age;
   ci=0;answers=[];
@@ -1106,7 +1189,7 @@ function showResult(){
   const age=parseInt(window.sAge)||25;
   document.getElementById('rBadge').textContent='你的中式人格';
   document.getElementById('rAgeTag').style.display='block';
-  document.getElementById('rAgeTag').textContent=age<22?'🌱 属于你的Z世代人格':age>35?'🍷 属于你的成熟人格':'🔥 属于你的当打之年';
+  document.getElementById('rAgeTag').textContent=age<22?'🌱 命定Z世代·青春加持':age>35?'🍷 命定不惑年·成熟加持':'🔥 命定当打年·正值巅峰';
   document.getElementById('rType').textContent=pt.t;
   document.getElementById('rName').textContent=pt.name + (pt.cn ? " · " + pt.cn : "");
   document.getElementById('rSub').textContent=pt.s;
@@ -1137,8 +1220,8 @@ function showResult(){
   // tags
   let th='';
   pt.tags.forEach(t=>th+=`<span class="rtag">${t}</span>`);
-  if(window.sZodiac)th+=`<span class="rtag">🐉 ${window.sZodiac}</span>`;
-  if(window.sStar)th+=`<span class="rtag">♈ ${window.sStar}座</span>`;
+  if(window.sZodiac)th+=`<span class="rtag">🐉 ${window.sZodiac}年</span>`;
+  if(window.sStar)th+=`<span class="rtag">☀️ ${window.sStar}宫</span>`;
   document.getElementById('rTags').innerHTML=th;
 
   show('sRes');
@@ -1176,7 +1259,7 @@ function share(p){
       let pt=null;
       for(const k of keys){if(TYPES[k].t===t){pt=TYPES[k];break;}}
       if(!pt)pt=TYPES[keys[0]];
-      document.title=`${n}的中式人格 · 中式人格测试`;
+      document.title=`${n}的中式命格 · 中式命格测试`;
       // 显示人格卡
       document.getElementById('rBadge').textContent=`${n}的中式人格`;
       document.getElementById('rAgeTag').style.display='block';
